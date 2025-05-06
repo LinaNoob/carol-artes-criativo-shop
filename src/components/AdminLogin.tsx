@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getAdminPassword } from '../utils/localStorage';
-import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdminLoginProps {
   isOpen: boolean;
@@ -13,29 +13,36 @@ interface AdminLoginProps {
 }
 
 const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin }) => {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isError, setIsError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn } = useAuth();
   const { toast } = useToast();
 
-  const handleLogin = () => {
-    const correctPassword = getAdminPassword();
+  const handleLogin = async () => {
+    setIsLoading(true);
+    setIsError(false);
     
-    if (password === correctPassword) {
-      setIsError(false);
+    const { error } = await signIn(email, password);
+    
+    if (error) {
+      setIsError(true);
+      toast({
+        title: "Falha no login",
+        description: "Email ou senha incorretos",
+        variant: "destructive",
+      });
+    } else {
       toast({
         title: "Login bem-sucedido",
         description: "Bem-vindo ao modo administrador.",
       });
       onLogin();
       onClose();
-    } else {
-      setIsError(true);
-      toast({
-        title: "Senha incorreta",
-        description: "Por favor, tente novamente.",
-        variant: "destructive",
-      });
     }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -46,13 +53,30 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin }) => 
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
+            <label htmlFor="admin-email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <Input
+              id="admin-email"
+              type="email"
+              placeholder="Digite seu email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setIsError(false);
+              }}
+              className={`w-full ${isError ? 'border-red-500' : ''}`}
+            />
+          </div>
+          
+          <div className="space-y-2">
             <label htmlFor="admin-password" className="block text-sm font-medium text-gray-700">
-              Senha do Administrador
+              Senha
             </label>
             <Input
               id="admin-password"
               type="password"
-              placeholder="Digite a senha de administrador"
+              placeholder="Digite sua senha"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -60,18 +84,19 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ isOpen, onClose, onLogin }) => 
               }}
               className={`w-full ${isError ? 'border-red-500' : ''}`}
             />
-            {isError && <p className="text-xs text-red-500">Senha incorreta. Tente novamente.</p>}
-            <p className="text-xs text-gray-500 italic">
-              A senha padrão é "carol1234" (sem as aspas).
-            </p>
+            {isError && <p className="text-xs text-red-500">Email ou senha incorretos.</p>}
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancelar
           </Button>
-          <Button className="bg-carol-pink hover:bg-opacity-90" onClick={handleLogin}>
-            Entrar
+          <Button 
+            className="bg-carol-pink hover:bg-opacity-90" 
+            onClick={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? "Entrando..." : "Entrar"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,15 +1,16 @@
 
 export interface Product {
   id: string;
-  name: string;
-  price: number;
-  imagePath: string;
-  pixCode: string;
-  pdfLink: string;
-  canvaLink: string;
-  description: string;
-  category: string;
-  featured?: boolean;
+  nome: string;
+  preco: number;
+  imagem_url: string;
+  pix_codigo: string;
+  link_pdf: string;
+  link_canva: string;
+  descricao: string;
+  categoria: string;
+  destaque?: boolean;
+  created_at?: string;
 }
 
 export interface ProductPurchase {
@@ -18,4 +19,15 @@ export interface ProductPurchase {
   purchaseDate: string;
   token: string;
   expiresAt: string;
+}
+
+export interface SiteConfig {
+  id: string;
+  banner_image: string;
+  banner_title: string;
+  banner_subtitle: string;
+  banner_button_text: string;
+  about_title: string;
+  about_content: string;
+  about_image: string;
 }

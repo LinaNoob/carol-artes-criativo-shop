@@ -10,10 +10,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Product, ProductPurchase } from '../types/Product';
 import { formatCurrency, generateQRCodeUrl, isValidEmail, triggerWebhook, generateToken, getExpiryDate } from '../utils/helpers';
-import { savePurchase } from '../utils/localStorage';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
+import { useStorage } from '@/hooks/useStorage';
+import { supabase } from '@/lib/supabase';
 
 interface PurchaseModalProps {
   product: Product;
@@ -26,9 +27,10 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { createSignedUrl } = useStorage();
   
   const handleCopyPix = () => {
-    navigator.clipboard.writeText(product.pixCode);
+    navigator.clipboard.writeText(product.pix_codigo);
     toast({
       title: "Código PIX copiado!",
       description: "Cole no seu aplicativo de banco para realizar o pagamento.",
@@ -47,35 +49,66 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
     
     setIsSubmitting(true);
     
-    // Simula o envio para um webhook
-    const token = generateToken();
-    const expiryDate = getExpiryDate();
-    
-    const purchaseData: ProductPurchase = {
-      product,
-      email,
-      purchaseDate: new Date().toISOString(),
-      token,
-      expiresAt: expiryDate
-    };
-    
     try {
-      // Em uma implementação real, isso chamaria um webhook/backend
-      const webhookSuccess = await triggerWebhook(purchaseData);
+      // Gerar token único
+      const token = generateToken();
+      const expiryDate = getExpiryDate(30); // Link expira em 30 minutos
       
-      if (webhookSuccess) {
-        // Salvar na simulação local
-        savePurchase(purchaseData);
+      // Criar link temporário para o PDF
+      let signedUrl = '';
+      if (product.link_pdf) {
+        // Extrair o caminho do arquivo do URL público
+        const pathParts = product.link_pdf.split('/');
+        const filePath = pathParts[pathParts.length - 1];
         
-        // Fecha o modal após processamento bem-sucedido
-        onClose();
-        
-        // Redireciona para a página do produto com o token
-        navigate(`/produto/${product.id}?token=${token}`);
-      } else {
-        throw new Error("Falha no processamento do webhook");
+        const signedUrlResult = await createSignedUrl(filePath);
+        if (signedUrlResult.signedUrl) {
+          signedUrl = signedUrlResult.signedUrl;
+        }
       }
-    } catch (error) {
+      
+      // Registrar a compra no Supabase
+      const purchaseData = {
+        produto_id: product.id,
+        email: email,
+        data_compra: new Date().toISOString(),
+        token: token,
+        expira_em: expiryDate,
+        pdf_link_temp: signedUrl
+      };
+      
+      const { error: dbError } = await supabase
+        .from('compras')
+        .insert([purchaseData]);
+        
+      if (dbError) throw dbError;
+      
+      // Disparar webhook para notificar sobre a compra
+      const webhookData = {
+        product: product,
+        customer: {
+          email: email
+        },
+        purchase: {
+          id: token,
+          date: new Date().toISOString(),
+          expiry: expiryDate,
+          downloadUrl: signedUrl,
+          accessUrl: `${window.location.origin}/produto/${product.id}?token=${token}`
+        }
+      };
+      
+      // Enviar para webhook
+      await triggerWebhook(webhookData);
+      
+      // Fecha o modal após processamento bem-sucedido
+      onClose();
+      
+      // Redireciona para a página do produto com o token
+      navigate(`/produto/${product.id}?token=${token}`);
+      
+    } catch (error: any) {
+      console.error('Erro ao processar compra:', error);
       toast({
         title: "Erro ao processar pagamento",
         description: "Ocorreu um erro. Por favor, tente novamente.",
@@ -94,7 +127,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
             Finalizar Compra
           </DialogTitle>
           <p className="text-center text-gray-600 font-medium mt-1">
-            {product.name} - {formatCurrency(product.price)}
+            {product.nome} - {formatCurrency(product.preco)}
           </p>
         </DialogHeader>
         
@@ -102,7 +135,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
           <div className="flex justify-center mb-2">
             <div className="w-48 h-48 relative bg-gray-100">
               <img 
-                src={generateQRCodeUrl(product.pixCode)} 
+                src={generateQRCodeUrl(product.pix_codigo)} 
                 alt="QR Code para pagamento" 
                 className="w-full h-full"
               />
@@ -111,7 +144,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
           
           <div className="bg-gray-50 border border-gray-200 rounded p-2 relative">
             <Input
-              value={product.pixCode}
+              value={product.pix_codigo}
               readOnly
               className="pr-10 text-xs text-gray-700 border-0 bg-transparent focus-visible:ring-0"
             />

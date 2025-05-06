@@ -8,45 +8,36 @@ import ProductGrid from '@/components/ProductGrid';
 import AboutSection from '@/components/AboutSection';
 import AdminLogin from '@/components/AdminLogin';
 import AdminPanel from '@/components/AdminPanel';
-import { products as initialProducts } from '@/data/products';
-import { getStoredProducts, getSocialLinks } from '@/utils/localStorage';
-import { Product } from '@/types/Product';
+import { useProducts } from '@/hooks/useProducts';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { getSocialLinks } from '@/utils/localStorage';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const { products, loading } = useProducts();
+  const { config } = useSiteConfig();
   const [socialLinks, setSocialLinks] = useState({
     instagram: 'https://instagram.com/',
     tiktok: 'https://tiktok.com/',
     shopee: 'https://shopee.com.br/',
     whatsapp: 'https://wa.me/5500000000000'
   });
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
-    const storedProducts = getStoredProducts();
-    if (storedProducts && storedProducts.length > 0) {
-      // Combine stored products with initial products, preferring stored versions
-      const combinedProducts = [...initialProducts];
-      
-      storedProducts.forEach(storedProduct => {
-        const index = combinedProducts.findIndex(p => p.id === storedProduct.id);
-        if (index >= 0) {
-          combinedProducts[index] = storedProduct;
-        } else {
-          combinedProducts.push(storedProduct);
-        }
-      });
-      
-      setProducts(combinedProducts);
-    }
-    
-    // Load social links from localStorage if available
+    // Carrega links sociais do localStorage se disponíveis
     const links = getSocialLinks();
     if (links) {
       setSocialLinks({...socialLinks, ...links});
     }
-  }, []);
+    
+    // Se o usuário já está logado como admin, habilita o modo admin
+    if (isAdmin) {
+      setIsAdminMode(true);
+    }
+  }, [isAdmin]);
 
   const handleAdminMode = () => {
     setShowAdminLogin(true);
@@ -60,31 +51,36 @@ const Index = () => {
     setIsAdminMode(false);
   };
 
-  const handleProductsUpdated = (updatedProducts: Product[]) => {
-    setProducts(updatedProducts);
-  };
-
   if (isAdminMode) {
     return (
-      <AdminPanel 
-        initialProducts={products}
-        onClose={handleExitAdminMode}
-        onProductsUpdated={handleProductsUpdated}
-      />
+      <AdminPanel onClose={handleExitAdminMode} />
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header onAdminMode={handleAdminMode} socialLinks={socialLinks} />
+      <Header 
+        onAdminMode={handleAdminMode} 
+        socialLinks={socialLinks} 
+      />
       
       <main className="flex-grow pt-16 pb-16">
-        <Hero />
+        <Hero 
+          backgroundImage={config?.banner_image || "/public/placeholder.svg"}
+          title={config?.banner_title || "Carol Artes"}
+          subtitle={config?.banner_subtitle || "Moldes em PDF e projetos Canva para papelaria personalizada"}
+          buttonText={config?.banner_button_text || "Ver Produtos"}
+        />
         <ProductGrid 
           products={products}
           subtitle="Moldes em PDF e projetos Canva para papelaria personalizada"
+          loading={loading}
         />
-        <AboutSection />
+        <AboutSection 
+          title={config?.about_title}
+          content={config?.about_content}
+          imageSrc={config?.about_image}
+        />
       </main>
       
       <BottomNav />

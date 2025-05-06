@@ -12,12 +12,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onBuyClick }) => {
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
       <div className="relative pb-[100%]">
-        <img 
-          src={product.imagePath} 
-          alt={product.name}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        {product.featured && (
+        {product.imagem_url ? (
+          <img 
+            src={product.imagem_url} 
+            alt={product.nome}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+            Sem imagem
+          </div>
+        )}
+        
+        {product.destaque && (
           <div className="absolute top-0 right-0 bg-carol-pink text-white text-xs font-bold px-3 py-1 m-2 rounded-full">
             Destaque
           </div>
@@ -26,16 +33,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onBuyClick }) => {
       
       <div className="p-5">
         <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 h-14">
-          {product.name}
+          {product.nome}
         </h3>
         
         <p className="text-gray-600 text-sm mb-4 line-clamp-3 h-16">
-          {product.description}
+          {product.descricao}
         </p>
         
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold text-carol-pink">
-            {formatCurrency(product.price)}
+            {formatCurrency(product.preco)}
           </span>
           
           <button 

@@ -3,12 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
-import { getPurchaseByToken, isTokenValid } from '@/utils/localStorage';
+import { useToast } from '@/hooks/use-toast';
 import { isValidEmail } from '@/utils/helpers';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
-import { products } from '@/data/products';
+import { supabase } from '@/lib/supabase';
+import { Product } from '@/types/Product';
 
 const ProductPage = () => {
   const { productId } = useParams();
@@ -19,61 +19,93 @@ const ProductPage = () => {
   
   const [email, setEmail] = useState('');
   const [purchase, setPurchase] = useState<any>(null);
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [loadingState, setLoadingState] = useState<'loading' | 'valid' | 'invalid'>('loading');
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [countdownInterval, setCountdownInterval] = useState<any>(null);
   
   useEffect(() => {
-    if (!productId || !token) {
-      setLoadingState('invalid');
-      return;
-    }
-    
-    // Check if token is valid
-    if (!isTokenValid(token)) {
-      setLoadingState('invalid');
-      return;
-    }
-    
-    // Find purchase by token
-    const foundPurchase = getPurchaseByToken(token);
-    if (!foundPurchase || foundPurchase.product.id !== productId) {
-      setLoadingState('invalid');
-      return;
-    }
-    
-    setPurchase(foundPurchase);
-    setProduct(foundPurchase.product);
-    setLoadingState('valid');
-    
-    // Calculate time left and start countdown
-    const updateCountdown = () => {
-      const expiry = new Date(foundPurchase.expiresAt);
-      const now = new Date();
-      const diffMs = expiry.getTime() - now.getTime();
-      
-      if (diffMs <= 0) {
-        clearInterval(countdownInterval);
-        setTimeLeft('Expirado');
+    const fetchData = async () => {
+      if (!productId || !token) {
         setLoadingState('invalid');
         return;
       }
       
-      const minutes = Math.floor(diffMs / (1000 * 60));
-      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-      setTimeLeft(`${minutes}:${seconds < 10 ? '0' : ''}${seconds} minutos`);
+      try {
+        // Verifica se a compra existe com este token
+        const { data: purchaseData, error: purchaseError } = await supabase
+          .from('compras')
+          .select('*')
+          .eq('token', token)
+          .single();
+        
+        if (purchaseError || !purchaseData) {
+          setLoadingState('invalid');
+          return;
+        }
+        
+        // Verifica se o produto da compra corresponde ao ID na URL
+        if (purchaseData.produto_id !== productId) {
+          setLoadingState('invalid');
+          return;
+        }
+        
+        // Verifica se o token expirou
+        const expiryDate = new Date(purchaseData.expira_em);
+        if (expiryDate < new Date()) {
+          setLoadingState('invalid');
+          return;
+        }
+        
+        setPurchase(purchaseData);
+        
+        // Busca os detalhes do produto
+        const { data: productData, error: productError } = await supabase
+          .from('produtos')
+          .select('*')
+          .eq('id', productId)
+          .single();
+          
+        if (productError || !productData) {
+          setLoadingState('invalid');
+          return;
+        }
+        
+        setProduct(productData);
+        setLoadingState('valid');
+        
+        // Define o email do comprador
+        setEmail(purchaseData.email || '');
+        
+        // Configura o contador de tempo
+        const updateCountdown = () => {
+          const expiry = new Date(purchaseData.expira_em);
+          const now = new Date();
+          const diffMs = expiry.getTime() - now.getTime();
+          
+          if (diffMs <= 0) {
+            clearInterval(countdownInterval);
+            setTimeLeft('Expirado');
+            setLoadingState('invalid');
+            return;
+          }
+          
+          const minutes = Math.floor(diffMs / (1000 * 60));
+          const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+          setTimeLeft(`${minutes}:${seconds < 10 ? '0' : ''}${seconds} minutos`);
+        };
+        
+        updateCountdown(); // Run immediately
+        const interval = setInterval(updateCountdown, 1000);
+        setCountdownInterval(interval);
+        
+      } catch (error) {
+        console.error('Error fetching product data:', error);
+        setLoadingState('invalid');
+      }
     };
     
-    updateCountdown(); // Run immediately
-    const interval = setInterval(updateCountdown, 1000);
-    setCountdownInterval(interval);
-    
-    // Find product in catalog if available
-    const foundProduct = products.find(p => p.id === productId);
-    if (foundProduct) {
-      setProduct(foundProduct);
-    }
+    fetchData();
     
     return () => {
       if (countdownInterval) {
@@ -83,8 +115,16 @@ const ProductPage = () => {
   }, [productId, token]);
   
   const handleDownloadPDF = () => {
-    if (product?.pdfLink) {
-      window.open(product.pdfLink, '_blank');
+    // Usa o link temporário gerado no momento da compra
+    if (purchase?.pdf_link_temp) {
+      window.open(purchase.pdf_link_temp, '_blank');
+      toast({
+        title: "Download iniciado",
+        description: "Seu PDF está sendo baixado."
+      });
+    } else if (product?.link_pdf) {
+      // Fallback para o link direto
+      window.open(product.link_pdf, '_blank');
       toast({
         title: "Download iniciado",
         description: "Seu PDF está sendo baixado."
@@ -99,8 +139,8 @@ const ProductPage = () => {
   };
   
   const handleOpenCanva = () => {
-    if (product?.canvaLink) {
-      window.open(product.canvaLink, '_blank');
+    if (product?.link_canva) {
+      window.open(product.link_canva, '_blank');
     } else {
       toast({
         title: "Erro",
@@ -110,7 +150,7 @@ const ProductPage = () => {
     }
   };
   
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (!isValidEmail(email)) {
       toast({
         title: "Email inválido",
@@ -120,10 +160,25 @@ const ProductPage = () => {
       return;
     }
     
+    // Em um ambiente real, isso enviaria um email com os links
+    // Aqui estamos apenas simulando o envio bem-sucedido
     toast({
       title: "Email enviado",
       description: `Os links foram enviados para ${email}.`
     });
+    
+    // Registra a solicitação de reenvio de email
+    try {
+      await supabase
+        .from('email_logs')
+        .insert([{
+          compra_id: purchase.id,
+          email: email,
+          data_envio: new Date().toISOString()
+        }]);
+    } catch (error) {
+      console.error('Erro ao registrar envio de email:', error);
+    }
   };
   
   const handleAdminMode = () => {
@@ -133,7 +188,7 @@ const ProductPage = () => {
   if (loadingState === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>Carregando...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-carol-pink"></div>
       </div>
     );
   }
@@ -154,7 +209,7 @@ const ProductPage = () => {
               onClick={() => navigate('/')}
               className="bg-carol-pink hover:bg-opacity-90"
             >
-              Voltar para a Página Inicial
+              Voltar para a Loja
             </Button>
           </div>
         </main>
@@ -173,19 +228,25 @@ const ProductPage = () => {
           <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden border border-pink-100">
             <div className="p-6">
               <h1 className="text-2xl font-bold text-center text-carol-pink mb-1">
-                {product?.name}
+                {product?.nome}
               </h1>
               <p className="text-center text-gray-600 text-sm mb-6">
                 Seu acesso ao produto
               </p>
               
               <div className="flex justify-center mb-6">
-                <div className="w-32 h-32 md:w-48 md:h-48 bg-gray-100 rounded-md">
-                  <img 
-                    src={product?.imagePath} 
-                    alt={product?.name}
-                    className="w-full h-full object-contain"
-                  />
+                <div className="w-32 h-32 md:w-48 md:h-48 bg-gray-100 rounded-md overflow-hidden">
+                  {product?.imagem_url ? (
+                    <img 
+                      src={product.imagem_url} 
+                      alt={product.nome}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                      Sem imagem
+                    </div>
+                  )}
                 </div>
               </div>
               

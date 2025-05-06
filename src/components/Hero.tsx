@@ -1,72 +1,57 @@
 
-import React, { useRef, useEffect } from 'react';
-import { ArrowDown } from 'lucide-react';
+import React from 'react';
 
-const Hero: React.FC = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const fallbackImagePath = "/lovable-uploads/f2e269b4-c9ec-4c2f-8372-842b14e79b73.png";
+interface HeroProps {
+  backgroundImage?: string;
+  title?: string;
+  subtitle?: string;
+  buttonText?: string;
+}
 
-  useEffect(() => {
-    const handleError = () => {
-      if (videoRef.current) {
-        videoRef.current.style.display = 'none';
-        const container = videoRef.current.parentElement;
-        if (container) {
-          const img = document.createElement('img');
-          img.src = fallbackImagePath;
-          img.alt = "Carol Artes";
-          img.className = "w-full h-full object-cover absolute inset-0 rounded-full";
-          container.appendChild(img);
-        }
-      }
-    };
-
-    if (videoRef.current) {
-      videoRef.current.addEventListener('error', handleError);
+const Hero: React.FC<HeroProps> = ({ 
+  backgroundImage = "/public/placeholder.svg",
+  title = "Carol Artes",
+  subtitle = "Papelaria personalizada para todas as ocasiões",
+  buttonText = "Ver Produtos"
+}) => {
+  const scrollToProducts = () => {
+    const productsSection = document.getElementById('produtos');
+    if (productsSection) {
+      productsSection.scrollIntoView({ behavior: 'smooth' });
     }
-
-    return () => {
-      if (videoRef.current) {
-        videoRef.current.removeEventListener('error', handleError);
-      }
-    };
-  }, []);
+  };
 
   return (
-    <div className="relative bg-white py-24 mt-16 overflow-hidden">
+    <section className="relative bg-gray-100">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={backgroundImage} 
+          alt="Banner" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+      </div>
+      
       <div className="container mx-auto px-4 relative z-10">
-        <div className="flex flex-col items-center justify-center">
-          <div className="w-64 h-64 md:w-80 md:h-80 relative rounded-full overflow-hidden border-4 border-carol-pink shadow-lg mb-8">
-            <video 
-              ref={videoRef}
-              autoPlay 
-              muted 
-              loop 
-              playsInline
-              className="w-full h-full object-cover absolute inset-0"
-            >
-              <source src="/video/demo.mp4" type="video/mp4" />
-              {/* Fallback handled by useEffect */}
-            </video>
-          </div>
-          
-          <h1 className="text-4xl md:text-5xl font-bold text-carol-pink mb-4 font-playfair text-center">
-            Papelaria Personalizada
+        <div className="flex flex-col items-center justify-center min-h-[70vh] py-20 text-center text-white">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
+            {title}
           </h1>
           
-          <p className="text-xl text-gray-700 mb-8 max-w-xl text-center">
-            Moldes em PDF e projetos do Canva para tornar seu dia mais organizado e bonito
+          <p className="text-xl md:text-2xl mb-8 max-w-2xl">
+            {subtitle}
           </p>
           
-          <div className="animate-bounce mt-8">
-            <a href="#produtos" className="flex flex-col items-center text-gray-500 hover:text-carol-pink transition-colors">
-              <span className="text-sm mb-1">Ver Produtos</span>
-              <ArrowDown size={24} />
-            </a>
-          </div>
+          <button 
+            onClick={scrollToProducts}
+            className="bg-carol-pink hover:bg-opacity-90 text-white px-8 py-3 rounded-full text-lg font-medium transition-colors transform hover:scale-105 shadow-lg"
+          >
+            {buttonText}
+          </button>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 
