@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { getStoredProducts, saveProducts, setAdminPassword } from '../utils/localStorage';
+import { 
+  getStoredProducts, 
+  saveProducts, 
+  setAdminPassword, 
+  getSocialLinks, 
+  setSocialLinks 
+} from '../utils/localStorage';
 import { Product } from '../types/Product';
 import { formatCurrency } from '../utils/helpers';
 
@@ -31,6 +36,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialProducts, onClose, onPro
     category: '',
   });
   const [newPassword, setNewPassword] = useState('');
+  const [socialLinks, setSocialLinksState] = useState({
+    instagram: '',
+    tiktok: '',
+    shopee: '',
+    whatsapp: '',
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -46,6 +57,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialProducts, onClose, onPro
     });
     
     setProducts(combinedProducts);
+    
+    // Load social links
+    const links = getSocialLinks();
+    if (links) {
+      setSocialLinksState(links);
+    }
   }, [initialProducts]);
 
   const handleSelectProduct = (product: Product) => {
@@ -144,9 +161,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialProducts, onClose, onPro
       description: "A senha de administrador foi alterada com sucesso."
     });
   };
+  
+  const handleSaveSocialLinks = () => {
+    setSocialLinks(socialLinks);
+    
+    toast({
+      title: "Links sociais atualizados",
+      description: "As redes sociais foram atualizadas com sucesso."
+    });
+  };
 
   return (
-    <div className="bg-white min-h-screen p-4">
+    <div className="bg-white min-h-screen p-4 pt-20 pb-20">
       <div className="container mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Painel de Administração</h1>
@@ -160,6 +186,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialProducts, onClose, onPro
             <TabsTrigger value="products">Produtos</TabsTrigger>
             <TabsTrigger value="add-product">Adicionar Produto</TabsTrigger>
             <TabsTrigger value="settings">Configurações</TabsTrigger>
+            <TabsTrigger value="social">Redes Sociais</TabsTrigger>
           </TabsList>
           
           <TabsContent value="products">
@@ -501,6 +528,68 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialProducts, onClose, onPro
                         <span className="font-semibold">Data de Atualização:</span> {new Date().toLocaleDateString()}
                       </p>
                     </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="social">
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-xl font-bold mb-6">Redes Sociais</h2>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="instagram-link">Link do Instagram</Label>
+                    <Input 
+                      id="instagram-link"
+                      placeholder="https://instagram.com/seu_perfil"
+                      value={socialLinks.instagram}
+                      onChange={(e) => setSocialLinksState({...socialLinks, instagram: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="tiktok-link">Link do TikTok</Label>
+                    <Input 
+                      id="tiktok-link"
+                      placeholder="https://tiktok.com/@seu_perfil"
+                      value={socialLinks.tiktok}
+                      onChange={(e) => setSocialLinksState({...socialLinks, tiktok: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="shopee-link">Link da Shopee</Label>
+                    <Input 
+                      id="shopee-link"
+                      placeholder="https://shopee.com.br/seu_perfil"
+                      value={socialLinks.shopee}
+                      onChange={(e) => setSocialLinksState({...socialLinks, shopee: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsapp-link">Link do WhatsApp</Label>
+                    <Input 
+                      id="whatsapp-link"
+                      placeholder="https://wa.me/5500000000000"
+                      value={socialLinks.whatsapp}
+                      onChange={(e) => setSocialLinksState({...socialLinks, whatsapp: e.target.value})}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Formato: https://wa.me/5511999999999 (com código do país e DDD)
+                    </p>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <Button 
+                      className="bg-carol-pink hover:bg-opacity-90"
+                      onClick={handleSaveSocialLinks}
+                    >
+                      Salvar Redes Sociais
+                    </Button>
                   </div>
                 </div>
               </CardContent>

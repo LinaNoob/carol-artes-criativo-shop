@@ -40,6 +40,7 @@
 
   * {
     @apply border-border;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -64,4 +65,36 @@
   .btn-secondary {
     @apply bg-white border border-carol-pink text-carol-pink hover:bg-carol-pink hover:text-white rounded-full px-6 py-2 font-medium transition-all;
   }
+
+  /* Content area padding accounting for fixed header and footer */
+  .page-padding {
+    @apply pt-20 pb-20;
+  }
+}
+
+/* Custom animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes scroll-hint {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(10px);
+  }
+}
+
+.animate-scroll-hint {
+  animation: scroll-hint 2s ease-in-out infinite;
 }

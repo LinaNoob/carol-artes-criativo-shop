@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
+import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 import Hero from '@/components/Hero';
 import ProductGrid from '@/components/ProductGrid';
@@ -8,13 +9,19 @@ import AboutSection from '@/components/AboutSection';
 import AdminLogin from '@/components/AdminLogin';
 import AdminPanel from '@/components/AdminPanel';
 import { products as initialProducts } from '@/data/products';
-import { getStoredProducts } from '@/utils/localStorage';
+import { getStoredProducts, getSocialLinks } from '@/utils/localStorage';
 import { Product } from '@/types/Product';
 
 const Index = () => {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [socialLinks, setSocialLinks] = useState({
+    instagram: 'https://instagram.com/',
+    tiktok: 'https://tiktok.com/',
+    shopee: 'https://shopee.com.br/',
+    whatsapp: 'https://wa.me/5500000000000'
+  });
 
   useEffect(() => {
     const storedProducts = getStoredProducts();
@@ -32,6 +39,12 @@ const Index = () => {
       });
       
       setProducts(combinedProducts);
+    }
+    
+    // Load social links from localStorage if available
+    const links = getSocialLinks();
+    if (links) {
+      setSocialLinks({...socialLinks, ...links});
     }
   }, []);
 
@@ -63,9 +76,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header onAdminMode={handleAdminMode} />
+      <Header onAdminMode={handleAdminMode} socialLinks={socialLinks} />
       
-      <main className="flex-grow">
+      <main className="flex-grow pt-16 pb-16">
         <Hero />
         <ProductGrid 
           products={products}
@@ -74,6 +87,7 @@ const Index = () => {
         <AboutSection />
       </main>
       
+      <BottomNav />
       <Footer />
       
       <AdminLogin 

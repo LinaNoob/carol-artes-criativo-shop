@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { 
   Dialog, 
-  DialogContent, 
-  DialogHeader, 
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
-  DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Product, ProductPurchase } from '../types/Product';
@@ -13,6 +13,7 @@ import { formatCurrency, generateQRCodeUrl, isValidEmail, triggerWebhook, genera
 import { savePurchase } from '../utils/localStorage';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
+import { useNavigate } from 'react-router-dom';
 
 interface PurchaseModalProps {
   product: Product;
@@ -24,6 +25,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const handleCopyPix = () => {
     navigator.clipboard.writeText(product.pixCode);
@@ -65,16 +67,11 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
         // Salvar na simulação local
         savePurchase(purchaseData);
         
-        toast({
-          title: "Pagamento registrado!",
-          description: "Verifique seu email para acessar o produto.",
-        });
-        
-        // Para demonstração, mostramos o link que seria enviado por email
-        console.log(`Link de acesso (simulação): ${window.location.origin}/produto/${product.id}?token=${token}`);
-        
         // Fecha o modal após processamento bem-sucedido
         onClose();
+        
+        // Redireciona para a página do produto com o token
+        navigate(`/produto/${product.id}?token=${token}`);
       } else {
         throw new Error("Falha no processamento do webhook");
       }
@@ -91,48 +88,50 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Comprar {product.name}</DialogTitle>
+      <DialogContent className="sm:max-w-md bg-white p-0 border border-pink-100 rounded-lg overflow-hidden">
+        <DialogHeader className="p-4 border-b border-pink-100">
+          <DialogTitle className="text-xl font-semibold text-center text-carol-pink">
+            Finalizar Compra
+          </DialogTitle>
+          <p className="text-center text-gray-600 font-medium mt-1">
+            {product.name} - {formatCurrency(product.price)}
+          </p>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
-          <div className="text-center">
-            <p className="font-bold text-xl text-carol-pink mb-2">
-              {formatCurrency(product.price)}
-            </p>
-          </div>
-          
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-bold text-gray-800 mb-2">Pagamento via PIX</h4>
-            <div className="flex justify-center mb-4">
+        <div className="p-4 space-y-4">
+          <div className="flex justify-center mb-2">
+            <div className="w-48 h-48 relative bg-gray-100">
               <img 
                 src={generateQRCodeUrl(product.pixCode)} 
                 alt="QR Code para pagamento" 
-                className="w-40 h-40"
+                className="w-full h-full"
               />
-            </div>
-            
-            <div className="flex items-center justify-between bg-white border rounded-md p-2">
-              <div className="truncate text-sm pr-2">{product.pixCode}</div>
-              <Button variant="outline" size="sm" onClick={handleCopyPix}>
-                Copiar
-              </Button>
             </div>
           </div>
           
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Seu email para receber o acesso:
-            </label>
+          <div className="bg-gray-50 border border-gray-200 rounded p-2 relative">
             <Input
-              id="email"
+              value={product.pixCode}
+              readOnly
+              className="pr-10 text-xs text-gray-700 border-0 bg-transparent focus-visible:ring-0"
+            />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 text-xs"
+              onClick={handleCopyPix}
+            >
+              Copiar
+            </Button>
+          </div>
+          
+          <div className="space-y-2">
+            <Input
               type="email"
-              placeholder="seuemail@exemplo.com"
+              placeholder="Digite seu email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full"
-              required
+              className="border-gray-300"
             />
             <p className="text-xs text-gray-500 italic">
               Após confirmar o pagamento, o acesso será enviado para este email.
@@ -140,24 +139,14 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
           </div>
         </div>
         
-        <DialogFooter>
-          <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2 w-full">
-            <Button 
-              variant="outline" 
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="sm:flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handlePaymentSubmit}
-              disabled={isSubmitting || !email}
-              className="bg-carol-pink hover:bg-opacity-90 sm:flex-1"
-            >
-              {isSubmitting ? "Processando..." : "Já Paguei"}
-            </Button>
-          </div>
+        <DialogFooter className="p-0">
+          <Button 
+            onClick={handlePaymentSubmit}
+            disabled={isSubmitting || !email}
+            className="w-full rounded-none py-4 bg-carol-pink hover:bg-opacity-90 text-white font-medium"
+          >
+            {isSubmitting ? "Processando..." : "Já realizei o pagamento"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
