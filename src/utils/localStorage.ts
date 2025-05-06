@@ -98,10 +98,10 @@ export const checkAdminPassword = (password: string): boolean => {
 
 // Social Links
 export interface SocialLinks {
-  instagram?: string;
-  tiktok?: string;
-  shopee?: string;
-  whatsapp?: string;
+  instagram: string;
+  tiktok: string;
+  shopee: string;
+  whatsapp: string;
 }
 
 export const getSocialLinks = (): SocialLinks | null => {

@@ -11,7 +11,8 @@ import {
   saveProducts, 
   setAdminPassword, 
   getSocialLinks, 
-  setSocialLinks 
+  setSocialLinks,
+  SocialLinks
 } from '../utils/localStorage';
 import { Product } from '../types/Product';
 import { formatCurrency } from '../utils/helpers';
@@ -36,7 +37,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialProducts, onClose, onPro
     category: '',
   });
   const [newPassword, setNewPassword] = useState('');
-  const [socialLinks, setSocialLinksState] = useState({
+  const [socialLinks, setSocialLinksState] = useState<SocialLinks>({
     instagram: '',
     tiktok: '',
     shopee: '',
@@ -61,7 +62,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ initialProducts, onClose, onPro
     // Load social links
     const links = getSocialLinks();
     if (links) {
-      setSocialLinksState(links);
+      setSocialLinksState({
+        instagram: links.instagram || '',
+        tiktok: links.tiktok || '',
+        shopee: links.shopee || '',
+        whatsapp: links.whatsapp || ''
+      });
     }
   }, [initialProducts]);
 

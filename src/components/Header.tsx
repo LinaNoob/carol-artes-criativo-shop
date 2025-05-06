@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Instagram, Tiktok, ShoppingBag, MessageCircle } from 'lucide-react';
+import { Instagram, Twitter, ShoppingBag, MessageCircle } from 'lucide-react';
 import { handleLogoClick } from '../utils/helpers';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -66,7 +66,7 @@ const Header: React.FC<HeaderProps> = ({
               className="text-gray-600 hover:text-carol-pink transition-colors"
               aria-label="TikTok"
             >
-              <Tiktok size={22} />
+              <Twitter size={22} />
             </a>
           )}
           
