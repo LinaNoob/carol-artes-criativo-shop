@@ -1,73 +1,126 @@
-# Welcome to your Lovable project
 
-## Project info
+# Carol Artes - E-commerce de Papelaria Personalizada
 
-**URL**: https://lovable.dev/projects/4e8ecde2-c154-4db9-85a9-a00c81de93d1
+Este projeto é um site de e-commerce para a Carol Artes, focado na venda de moldes em PDF e projetos do Canva para papelaria personalizada.
 
-## How can I edit this code?
+![Carol Artes Logo](/public/lovable-uploads/a8ac69c1-ef1e-45f2-9ac0-7271189195dd.png)
 
-There are several ways of editing your application.
+## Funcionalidades
 
-**Use Lovable**
+- Exibição de produtos em grid na página inicial
+- Sistema de compra via PIX com QR Code
+- Páginas de produto protegidas por token
+- Painel administrativo para gerenciamento de produtos
+- Simulação de expiração de links (30 minutos)
+- Layout responsivo com design em tons de rosa
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/4e8ecde2-c154-4db9-85a9-a00c81de93d1) and start prompting.
+## Como acessar o modo administrador
 
-Changes made via Lovable will be committed automatically to this repo.
+Para acessar o painel administrativo:
 
-**Use your preferred IDE**
+1. Clique 5 vezes no logo da Carol Artes no cabeçalho do site
+2. Digite a senha padrão: `carol1234`
+3. Agora você terá acesso ao painel administrativo completo
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Como editar produtos
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Usando o painel administrativo (recomendado)
 
-Follow these steps:
+1. Acesse o modo administrador conforme descrito acima
+2. Navegue até a aba "Produtos"
+3. Selecione um produto existente para editar ou clique na aba "Adicionar Produto" para criar um novo
+4. As alterações são salvas automaticamente
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Editando diretamente o código
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Para adicionar ou modificar produtos manualmente, edite o arquivo `src/data/products.ts`. Cada produto deve seguir a estrutura:
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```typescript
+{
+  id: "produto1",
+  name: "Nome do Produto",
+  price: 29.90,
+  imagePath: "/caminho/para/imagem.png",
+  pixCode: "00020126580014BR.GOV.BCB.PIX0136example@domain.com...",
+  pdfLink: "/produtos/produto1/arquivo.pdf",
+  canvaLink: "https://www.canva.com/design/exemplo/compartilhar",
+  description: "Descrição do produto...",
+  category: "categoria",
+  featured: true // opcional, para destacar o produto
+}
 ```
 
-**Edit a file directly in GitHub**
+## Configuração de pagamento PIX
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Para configurar o pagamento PIX:
 
-**Use GitHub Codespaces**
+1. Acesse o painel administrativo
+2. Edite cada produto individualmente 
+3. No campo "Código PIX Copia e Cola", insira o código PIX completo gerado pelo seu banco
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Alternativamente, edite o código PIX diretamente no arquivo `src/data/products.ts`.
 
-## What technologies are used for this project?
+## Integrações com sistemas externos
 
-This project is built with:
+### Webhooks (n8n ou similar)
 
-- Vite
-- TypeScript
+Atualmente o sistema está configurado para simular chamadas de webhook. Para integrá-lo realmente:
+
+1. Edite o arquivo `src/utils/helpers.ts`
+2. Procure a função `triggerWebhook`
+3. Descomente e configure a chamada fetch com a URL do seu webhook
+
+```typescript
+export const triggerWebhook = async (data: any): Promise<boolean> => {
+  // Substitua pela URL real do seu webhook n8n
+  return await fetch('https://n8n.seudominio.com/webhook/123', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(res => res.ok);
+};
+```
+
+### QR Code PIX
+
+O sistema usa a API do Google Charts para gerar QR Codes. Para uma implementação em produção, considere:
+
+1. Edite a função `generateQRCodeUrl` em `src/utils/helpers.ts`
+2. Substitua pela sua própria implementação ou serviço de geração de QR Code PIX
+
+## Estrutura de arquivos
+
+- `/src/components` - Componentes reutilizáveis (Header, Footer, ProductCard, etc.)
+- `/src/pages` - Páginas principais
+- `/src/data` - Dados dos produtos
+- `/src/utils` - Funções utilitárias
+- `/src/types` - Tipos TypeScript
+
+## Tecnologias utilizadas
+
 - React
-- shadcn-ui
+- TypeScript
 - Tailwind CSS
+- shadcn/ui (componentes de UI)
+- React Router
+- LocalStorage para persistência de dados
 
-## How can I deploy this project?
+## Personalização adicional
 
-Simply open [Lovable](https://lovable.dev/projects/4e8ecde2-c154-4db9-85a9-a00c81de93d1) and click on Share -> Publish.
+### Cores e estilos
 
-## Can I connect a custom domain to my Lovable project?
+As cores principais podem ser alteradas no arquivo `tailwind.config.ts` na seção `colors.carol`:
 
-Yes, you can!
+```typescript
+carol: {
+  pink: '#FF719A',
+  'light-pink': '#FFDEE2',
+  blue: '#BFE0F3',
+  gold: '#F6D365',
+  peach: '#FFA99F',
+}
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Fontes
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+O projeto usa as fontes Quicksand e Playfair Display do Google Fonts, configuradas no arquivo `src/index.css`.
