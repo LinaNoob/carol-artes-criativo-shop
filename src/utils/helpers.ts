@@ -12,10 +12,10 @@ export const generateToken = (length: number = 32): string => {
   return result;
 };
 
-// Calcula a data de expiração (30 minutos a partir de agora)
-export const getExpiryDate = (): string => {
+// Calcula a data de expiração baseado em minutos a partir de agora
+export const getExpiryDate = (minutes: number = 30): string => {
   const expiryDate = new Date();
-  expiryDate.setMinutes(expiryDate.getMinutes() + 30);
+  expiryDate.setMinutes(expiryDate.getMinutes() + minutes);
   return expiryDate.toISOString();
 };
 
@@ -76,4 +76,3 @@ export const handleLogoClick = (callback: () => void): void => {
     callback();
   }
 };
-
