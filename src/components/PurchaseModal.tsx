@@ -77,11 +77,19 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
         pdf_link_temp: signedUrl
       };
       
-      const { error: dbError } = await supabase
-        .from('compras')
-        .insert([purchaseData]);
-        
-      if (dbError) throw dbError;
+      try {
+        const { error: dbError } = await supabase
+          .from('compras')
+          .insert([purchaseData]);
+          
+        if (dbError) {
+          console.warn("Não foi possível salvar no banco de dados:", dbError);
+          // Continuar mesmo com erro do banco
+        }
+      } catch (dbErr) {
+        console.warn("Erro ao salvar no Supabase:", dbErr);
+        // Continuar o fluxo mesmo com erro
+      }
       
       // Disparar webhook para notificar sobre a compra
       const webhookData = {
@@ -99,7 +107,12 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
       };
       
       // Enviar para webhook
-      await triggerWebhook(webhookData);
+      try {
+        await triggerWebhook(webhookData);
+      } catch (webhookErr) {
+        console.warn("Erro ao enviar para webhook:", webhookErr);
+        // Continuar mesmo com erro de webhook
+      }
       
       // Fecha o modal após processamento bem-sucedido
       onClose();

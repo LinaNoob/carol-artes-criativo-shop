@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/types/Product';
 import { useToast } from '@/hooks/use-toast';
+import { products as staticProducts } from '@/data/products';
 
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usingStaticData, setUsingStaticData] = useState(false);
   const { toast } = useToast();
 
   const fetchProducts = async () => {
@@ -19,16 +21,27 @@ export const useProducts = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        throw error;
+        if (error.code === '42P01') {
+          // Tabela não existe, usar dados estáticos
+          console.log("Usando produtos estáticos por enquanto");
+          setProducts(staticProducts);
+          setUsingStaticData(true);
+        } else {
+          throw error;
+        }
+      } else {
+        setProducts(data || []);
       }
-
-      setProducts(data || []);
     } catch (error: any) {
+      console.error("Erro ao buscar produtos:", error);
       setError(error.message);
+      // Fallback para dados estáticos em caso de erro
+      setProducts(staticProducts);
+      setUsingStaticData(true);
+      
       toast({
-        title: "Erro ao carregar produtos",
-        description: error.message,
-        variant: "destructive"
+        title: "Usando dados locais",
+        description: "As tabelas no Supabase ainda não foram criadas. Usando dados de exemplo.",
       });
     } finally {
       setLoading(false);
@@ -37,6 +50,15 @@ export const useProducts = () => {
 
   const addProduct = async (product: Omit<Product, 'id' | 'created_at'>) => {
     try {
+      if (usingStaticData) {
+        toast({
+          title: "Modo demonstração",
+          description: "As tabelas do Supabase ainda não foram criadas. Execute o script SQL do README.",
+          variant: "destructive"
+        });
+        return { error: "Tabelas não criadas no Supabase" };
+      }
+      
       const { data, error } = await supabase
         .from('produtos')
         .insert([product])
@@ -66,6 +88,15 @@ export const useProducts = () => {
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
+      if (usingStaticData) {
+        toast({
+          title: "Modo demonstração",
+          description: "As tabelas do Supabase ainda não foram criadas. Execute o script SQL do README.",
+          variant: "destructive"
+        });
+        return { error: "Tabelas não criadas no Supabase" };
+      }
+      
       const { data, error } = await supabase
         .from('produtos')
         .update(updates)
@@ -96,6 +127,15 @@ export const useProducts = () => {
 
   const deleteProduct = async (id: string) => {
     try {
+      if (usingStaticData) {
+        toast({
+          title: "Modo demonstração",
+          description: "As tabelas do Supabase ainda não foram criadas. Execute o script SQL do README.",
+          variant: "destructive"
+        });
+        return { error: "Tabelas não criadas no Supabase" };
+      }
+      
       const { error } = await supabase
         .from('produtos')
         .delete()
@@ -139,6 +179,7 @@ export const useProducts = () => {
     addProduct,
     updateProduct,
     deleteProduct,
-    getFeaturedProducts
+    getFeaturedProducts,
+    usingStaticData
   };
 };

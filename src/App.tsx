@@ -21,12 +21,18 @@ const App = () => {
     // Check if Supabase is properly configured
     const checkSupabase = async () => {
       try {
-        // Simple query to check connection
+        // Simple query to check connection - using a simpler approach to check connection only
         const { data, error } = await supabase.from('produtos').select('id').limit(1);
-        if (error) {
+        
+        if (error && error.code === '42P01') {
+          // Tabela não existe, mas conexão funcionou
+          console.log("Conexão com o Supabase funcionou, mas a tabela 'produtos' não existe");
+          setIsSupabaseReady(true); // Ainda consideramos que está pronto para usar dados estáticos
+        } else if (error) {
           throw error;
+        } else {
+          setIsSupabaseReady(true);
         }
-        setIsSupabaseReady(true);
       } catch (err: any) {
         console.error('Supabase connection error:', err);
         setError(err.message || 'Erro ao conectar com o Supabase');
@@ -51,6 +57,15 @@ const App = () => {
           <p className="text-gray-700 mb-4">
             Mensagem de erro: <span className="text-red-500">{error}</span>
           </p>
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h2 className="text-lg font-semibold text-blue-700 mb-2">Como resolver este problema:</h2>
+            <ol className="list-decimal pl-5 text-blue-800 space-y-2">
+              <li>Acesse o painel do Supabase em <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="underline">https://supabase.com</a></li>
+              <li>Vá até o seu projeto e abra o Editor SQL</li>
+              <li>Execute o script SQL do README.md para criar as tabelas necessárias</li>
+              <li>Retorne para este aplicativo e recarregue a página</li>
+            </ol>
+          </div>
         </div>
       </div>
     );
