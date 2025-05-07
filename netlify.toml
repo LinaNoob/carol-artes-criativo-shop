@@ -1,0 +1,22 @@
+
+# Netlify configuration file
+
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+# Handle SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Set environment variables
+[context.production.environment]
+  NODE_VERSION = "18"
+
+# Add cache headers
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

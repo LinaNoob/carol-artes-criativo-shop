@@ -108,7 +108,6 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
       
       // Enviar para webhook
       try {
-        // Fix: Remove the argument as triggerWebhook should handle the data internally
         await triggerWebhook(webhookData);
       } catch (webhookErr) {
         console.warn("Erro ao enviar para webhook:", webhookErr);
