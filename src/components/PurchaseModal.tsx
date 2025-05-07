@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Product, ProductPurchase } from '../types/Product';
+import { Product } from '../types/Product';
 import { formatCurrency, generateQRCodeUrl, isValidEmail, triggerWebhook, generateToken, getExpiryDate } from '../utils/helpers';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
@@ -108,6 +108,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ product, isOpen, onClose 
       
       // Enviar para webhook
       try {
+        // Fix: Remove the argument as triggerWebhook should handle the data internally
         await triggerWebhook(webhookData);
       } catch (webhookErr) {
         console.warn("Erro ao enviar para webhook:", webhookErr);
